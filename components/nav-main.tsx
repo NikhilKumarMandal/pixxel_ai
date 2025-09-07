@@ -24,7 +24,7 @@ const NavItems = [
   },
   {
     title: "Generate Image",
-    url: "/image-generation",
+    url: "/Image-generation",
     icon: Image
   }
 ]

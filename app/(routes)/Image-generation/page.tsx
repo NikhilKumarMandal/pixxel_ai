@@ -1,9 +1,16 @@
+import Configuration from '@/components/ImageGeneration/Configuration';
+import GeneratedImages from '@/components/ImageGeneration/GeneratedImages';
 import React from 'react'
 
-function page() {
+const ImageGeneration = async () => {
   return (
-    <div className='bg-[#1a1a1a] max-w-full max-h-full'>page</div>
+    <section className='container mx-auto flex-1 grid gap-4 grid-cols-3 overflow-hidden'>
+      <Configuration />
+      <div className='col-span-2 p-4 rounded-xl flex items-center justify-center h-fit'>
+        <GeneratedImages />
+      </div>
+    </section>
   )
 }
 
-export default page
+export default ImageGeneration;
