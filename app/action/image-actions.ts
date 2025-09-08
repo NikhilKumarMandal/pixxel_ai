@@ -1,20 +1,22 @@
 "use server"
 
 import { z } from "zod";
-import Replicate from "replicate";
 import { ImageGenerationFormSchema } from "@/components/ImageGeneration/Configuration"
 import { currentUser } from "@clerk/nextjs/server";
+import { randomUUID } from "crypto";
+import { imagekit, replicate } from "@/lib/config";
+import prisma from "@/lib/prisma";
 
+
+
+//nikhilkumardev007-blip
 interface ImageResponse {
     error: string | null;
     success: boolean;
     data: any | null;
 }
 
-const replicate = new Replicate({
-    auth: process.env.REPLICATE_API_TOKEN,
-    useFileOutput: false
-});
+
 
 
 
@@ -62,6 +64,53 @@ export async function generateImageAction(input: (z.infer<typeof ImageGeneration
     }
 }
 
+
+export async function imgUrlToBuffer(url: string) {
+    const response = await fetch(url);
+    const arrayBuffer = await response.arrayBuffer();
+    return Buffer.from(arrayBuffer);
+}
+
+
+export async function storeImage(urls: string[]) {
+    const user = await currentUser();
+
+    if (!user) {
+        return {
+            error: "Unauthorized",
+            success: false,
+            data: null,
+        };
+    }
+
+    const savedImages = [];
+
+    for (const imgUrl of urls) {
+        const buffer = await imgUrlToBuffer(imgUrl);
+
+        // 2. Upload to ImageKit
+        const upload = await imagekit.upload({
+            file: buffer, // actual file buffer
+            fileName: `image_${randomUUID()}.jpg`,
+        });
+
+        // 3. Save to DB
+        const image = await prisma.image.create({
+            data: {
+                url: upload.url,
+                userId: user.id,
+            },
+        });
+
+        savedImages.push(image);
+    }
+
+    return {
+        error: null,
+        success: true,
+        data: savedImages,
+    };
+}
 
 export async function getImage(limit?: number) {
 

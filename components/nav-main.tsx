@@ -3,6 +3,7 @@
 import {
   Image,
   SquareTerminal,
+  User,
 } from "lucide-react"
 import {
   SidebarGroup,
@@ -26,6 +27,11 @@ const NavItems = [
     title: "Generate Image",
     url: "/Image-generation",
     icon: Image
+  },
+  {
+    title: "Generate Headsort",
+    url: "/generate-headsort",
+    icon: User
   }
 ]
 

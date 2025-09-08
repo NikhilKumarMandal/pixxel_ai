@@ -34,9 +34,9 @@ export default function RootLayout({
           publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
         >
           <main className="min-h-full">
-            <Toaster richColors />
             {children}
           </main>
+          <Toaster />
         </ClerkProvider>
       </body>
     </html>
