@@ -2,8 +2,10 @@
 
 import {
   Image,
+  ImagePlus,
   SquareTerminal,
   User,
+  Wand2,
 } from "lucide-react"
 import {
   SidebarGroup,
@@ -32,6 +34,16 @@ const NavItems = [
     title: "Generate Headsort",
     url: "/generate-headsort",
     icon: User
+  },
+  {
+    title: "Upscale image",
+    url: "/upscale-image",
+    icon: ImagePlus
+  },
+  {
+    title: "Remove Background",
+    url: "remove-background",
+    icon: Wand2
   }
 ]
 
