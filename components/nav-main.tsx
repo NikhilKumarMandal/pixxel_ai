@@ -3,6 +3,8 @@
 import {
   Image,
   ImagePlus,
+  RefreshCcw,
+  ScanText,
   SquareTerminal,
   User,
   Wand2,
@@ -49,6 +51,16 @@ const NavItems = [
     title: "Image to Image",
     url: "/image-to-image",
     icon: Image
+  },
+  {
+    title: "Restore Image",
+    url: "/restore-images",
+    icon: RefreshCcw
+  },
+  {
+    title: "Extract Text",
+    url: "/extract-text",
+    icon: ScanText
   }
 ]
 

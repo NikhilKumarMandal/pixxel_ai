@@ -1,6 +1,18 @@
 import { imagekit, openai } from "@/lib/config";
 import { NextRequest, NextResponse } from "next/server";
-import { ImageMessage } from "../generate-headsort/route";
+
+
+export interface ImageMessage {
+    role: string;
+    content: string;
+    images?: {
+        type: string;
+        image_url: {
+            url: string;
+        };
+        index: number;
+    }[];
+}
 
 export async function POST(req: NextRequest) {
     try {
