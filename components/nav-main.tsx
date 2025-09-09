@@ -42,8 +42,13 @@ const NavItems = [
   },
   {
     title: "Remove Background",
-    url: "remove-background",
+    url: "/remove-background",
     icon: Wand2
+  },
+  {
+    title: "Image to Image",
+    url: "/image-to-image",
+    icon: Image
   }
 ]
 

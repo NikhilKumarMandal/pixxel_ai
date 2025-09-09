@@ -1,23 +1,9 @@
 import { imagekit, openai } from "@/lib/config";
 import { NextRequest, NextResponse } from "next/server";
-
-
-interface ImageMessage {
-    role: string;
-    content: string;
-    images?: {
-        type: string;
-        image_url: {
-            url: string;
-        };
-        index: number;
-    }[];
-}
-
+import { ImageMessage } from "../generate-headsort/route";
 
 export async function POST(req: NextRequest) {
     try {
-        // Parse FormData
         const formData = await req.formData();
         const files = formData.getAll("images") as File[];
         const prompt = formData.get("prompt") as string;
@@ -26,104 +12,72 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "No files uploaded" }, { status: 400 });
         }
 
+        // Upload to ImageKit
         const uploadResults: any[] = [];
-
         for (const file of files) {
             const arrayBuffer = await file.arrayBuffer();
             const buffer = Buffer.from(arrayBuffer);
-
             const uploadResponse = await imagekit.upload({
                 file: buffer,
                 fileName: file.name,
                 isPublished: true,
                 useUniqueFileName: false,
             });
-
             uploadResults.push(uploadResponse);
         }
-
-        // extract only URLs from ImageKit uploads
         const imageUrls = uploadResults.map((u: any) => u.url);
 
-
-        const improvePrompt: any[] = [
-            { type: "text", text: `Please generate a detailed prompt for that provide and improve the user prompt "${prompt}". ` },
-            ...imageUrls.map((url: string) => ({
-                type: "image_url",
-                image_url: { url },
-            })),
-        ];
-
-        
-        
-
-        // const completionPrompt = await openai.chat.completions.create({
-        //     model: "openai/gpt-oss-120b:free",
-        //     messages: [
-        //         {
-        //             role: "system",
-        //             content: improvePrompt
-        //         }
-                
-        //     ],
-        // });
-
-        // const userInput = completionPrompt.choices[0].message.content;
-
-        // Build content array for OpenAI
+        // Send to Gemini
         const content: any[] = [
-            { 
-                type: "text", text: prompt },
+            { type: "text", text: prompt },
             ...imageUrls.map((url: string) => ({
                 type: "image_url",
                 image_url: { url },
             })),
         ];
-
 
         const completion = await openai.chat.completions.create({
             model: "google/gemini-2.5-flash-image-preview",
-            messages:[]
+            messages: [{ role: "user", content }],
         });
 
         console.log(completion);
-        
 
         const message = completion.choices[0].message as ImageMessage;
-        let uploadResult;
+
         if (message?.images?.[0]?.image_url?.url) {
             const rawUrl = message.images[0].image_url.url;
 
             if (rawUrl.startsWith("data:image")) {
-                // It's a base64 data URI
                 const base64Data = rawUrl.split(",")[1];
                 const buffer = Buffer.from(base64Data, "base64");
-
-                // Upload to ImageKit (or save locally)
-                uploadResult = await imagekit.upload({
+                const uploadResult = await imagekit.upload({
                     file: buffer.toString("base64"),
                     fileName: `thumbnail_${Date.now()}.png`,
                     isPublished: true,
                     useUniqueFileName: false,
                 });
-                console.log(uploadResult);
-                
-                console.log("✅ Uploaded to ImageKit:", uploadResult.url);
-                return NextResponse.json({ generatedThumbnail: uploadResult.url });
+                return NextResponse.json({
+                    success: true,
+                    msg: "Image generated successfully!",
+                    finalImage: uploadResult.url,
+                });
             } else {
-                return NextResponse.json({ generatedThumbnail: rawUrl });
+                return NextResponse.json({
+                    success: true,
+                    msg: "Image generated successfully!",
+                    finalImage: rawUrl,
+                });
             }
         }
 
-
-
+        // ✅ Always return fallback
         return NextResponse.json({
-            success: true,
-            prompt,
-            images: uploadResults,
+            success: false,
+            msg: "No image returned by model",
             completion,
-            msg: "Image generated successfully!",
         });
+
     } catch (error: any) {
         console.error(error);
         return NextResponse.json(

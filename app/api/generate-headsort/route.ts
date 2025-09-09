@@ -2,7 +2,7 @@ import { imagekit, openai } from "@/lib/config";
 import { NextRequest, NextResponse } from "next/server";
 
 
-interface ImageMessage {
+export interface ImageMessage {
     role: string;
     content: string;
     images?: {
