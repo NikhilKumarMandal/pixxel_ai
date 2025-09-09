@@ -1,8 +1,10 @@
 "use client"
 
 import {
+  Edit,
   Image,
   ImagePlus,
+  LayoutGrid,
   RefreshCcw,
   ScanText,
   SquareTerminal,
@@ -11,7 +13,6 @@ import {
 } from "lucide-react"
 import {
   SidebarGroup,
-  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -23,9 +24,14 @@ import { cn } from "@/lib/utils"
 
 const NavItems = [
   {
-    title: "Dashboard",
-    url: "/dashboard",
-    icon: SquareTerminal
+    title: "Editor",
+    url: "/upload-image",
+    icon: Edit
+  },
+  {
+    title: "Gallery",
+    url: "/gallery",
+    icon: LayoutGrid
   },
   {
     title: "Generate Image",
