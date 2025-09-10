@@ -99,6 +99,7 @@ export async function storeImage(urls: string[]) {
             data: {
                 url: upload.url,
                 userId: user.id,
+                fileId: upload.fileId
             },
         });
 

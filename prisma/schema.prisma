@@ -30,6 +30,8 @@ model Project {
   id     String @id @default(uuid())
   fileId String
   url    String
+  width  Int
+  height Int
 
   createdAt DateTime @default(now())
 

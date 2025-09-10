@@ -1,9 +1,20 @@
 import { imagekit, replicate } from "@/lib/config";
+import prisma from "@/lib/prisma";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 
 
 export async function POST(req: NextRequest) { 
 
+    const user = await currentUser();
+
+    if (!user) {
+        return {
+            error: "Unauthorized",
+            success: false,
+            data: null,
+        };
+    }
     try {
         const formData = await req.formData();
         const file = formData.get("image") as File;
@@ -22,11 +33,35 @@ export async function POST(req: NextRequest) {
             useUniqueFileName: false,
         });
 
+
+        const thumbnailUrl = imagekit.url({
+            src: uploadResult.url,
+            transformation: [
+                {
+                    width: 400,
+                    height: 300,
+                    cropMode: "maintain_ar",
+                    quality: 80,
+                },
+            ],
+        });
+
+        ``
+
+        const data = await prisma.project.create({
+            data: {
+                url: uploadResult.url,
+                fileId: uploadResult.fileId,
+                userId: user.id,
+                width: uploadResult.width,
+                height: uploadResult.height
+            }
+        })
+
         return NextResponse.json({
             success: true,
-            id:uploadResult.fileId,
-            upscaleUrl: uploadResult.url,
-            msg: "Image upscaled and stored successfully",
+            projectId:data.id,
+            msg: "Image stored successfully",
         });
     } catch (error: any) {
         console.log(error.message,"Message");

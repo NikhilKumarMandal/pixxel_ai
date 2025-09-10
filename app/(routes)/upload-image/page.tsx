@@ -1,15 +1,21 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useId, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Upload, X, ImageIcon } from "lucide-react"
+import { toast } from "sonner"
+import { useRouter } from "next/navigation";
+
 
 export default function ImageUploadPage() {
     const [selectedFile, setSelectedFile] = useState<File | null>(null)
     const [previewUrl, setPreviewUrl] = useState<string | null>(null)
     const [isDragOver, setIsDragOver] = useState(false)
+    const toastId = useId();
+    const router = useRouter();
+    const [loading, setLoading] = useState<boolean>(false);
 
     const handleFileSelect = (file: File) => {
         if (file && file.type.startsWith("image/")) {
@@ -53,10 +59,31 @@ export default function ImageUploadPage() {
         }
     }
 
-    const handleUpload = () => {
-        if (selectedFile) {
-            console.log("Uploading file:", selectedFile.name)
-            alert(`File "${selectedFile.name}" ready to upload!`)
+    const handleUpload = async () => {
+        if (!selectedFile) return;
+        setLoading(true)
+        try {
+            const formData = new FormData()
+            formData.append("image", selectedFile)
+
+            toast.loading("image uploading...", { id: toastId });
+
+            const res = await fetch("/api/upload", {
+                method: "POST",
+                body: formData,
+            });
+
+            const data = await res.json()
+
+            if (!res.ok) {
+                throw new Error(data.error || "Failed to upload image")
+            }
+            toast.success("Image uploaded successfully!", { id: toastId });
+            router.push(`/editor/${data.projectId}`);
+        } catch (err: any) {
+            toast.error(err.message || "Something went wrong", { id: toastId })
+        } finally {
+            setLoading(false)
         }
     }
 
@@ -112,7 +139,7 @@ export default function ImageUploadPage() {
                         )}
                     </div>
 
-                    <Button onClick={handleUpload} disabled={!selectedFile} className="w-full" size="lg">
+                    <Button onClick={handleUpload} disabled={!selectedFile || loading} className="w-full" size="lg">
                         <Upload className="h-4 w-4 mr-2" />
                         Upload Image
                     </Button>
