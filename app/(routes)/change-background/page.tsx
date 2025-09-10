@@ -1,5 +1,4 @@
 "use client"
-
 import React, { useId, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -17,26 +16,23 @@ function ChangeBackground() {
 
     const handleImageUpload = (file: File) => {
         if (!file.type.startsWith("image/")) return
+        setImage(file)
 
         const reader = new FileReader()
-        reader.onload = (e) => {
-            const result = e.target?.result as string
-            setImage(file)
-            setPreview(result)
-        }
+        reader.onload = (e) => setPreview(e.target?.result as string)
         reader.readAsDataURL(file)
+    }
+
+    const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            handleImageUpload(e.target.files[0])
+        }
     }
 
     const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault()
         if (e.dataTransfer.files.length > 0) {
-            handleImageUpload(e.dataTransfer.files[0]) 
-        }
-    }
-
-    const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files.length > 0) {
-            handleImageUpload(e.target.files[0]) 
+            handleImageUpload(e.dataTransfer.files[0])
         }
     }
 
@@ -50,7 +46,6 @@ function ChangeBackground() {
 
         if (!image) {
             toast.error("Please upload an image before submitting.", { id: toastId })
-            setLoading(false)
             return
         }
 
@@ -58,6 +53,7 @@ function ChangeBackground() {
         formData.append("image", image) 
         formData.append("prompt", prompt)
 
+        toast.loading("Changing Background...", { id: toastId })
         try {
             const res = await fetch("/api/change-bg", {
                 method: "POST",
@@ -69,6 +65,7 @@ function ChangeBackground() {
 
             if (data.success) {
                 toast.success(data.msg, { id: toastId })
+                console.log(data.finalImage);
                 setFinalImage(data.finalImage)
                 setImage(null)
                 setPreview(null)
@@ -82,12 +79,32 @@ function ChangeBackground() {
         }
     }
 
+
+    const handleDownload = async () => {
+        if (!finalImage) return;
+        try {
+            const response = await fetch(finalImage, { mode: "cors" });
+            const blob = await response.blob();
+            const blobUrl = window.URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = blobUrl;
+            link.download = "changeBackground.jpg";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(blobUrl);
+        } catch (error) {
+            console.error("Download failed", error);
+        }
+    }
+
+
     return (
         <div className="p-4">
             <div className="max-w-4xl mx-auto space-y-8">
                 <div className="text-center space-y-2">
-                    <h1 className="text-3xl font-bold tracking-tight text-white">Image To Image</h1>
-                    <p className="text-muted-foreground">Upload one image and add a description or prompt</p>
+                    <h1 className="text-3xl font-bold tracking-tight text-white">Change Background</h1>
+                    <p className="text-muted-foreground">Upload a single image and add a description or prompt</p>
                 </div>
 
                 <Card className="w-full bg-[#2a2a2a] text-[#a0a0a0]">
@@ -103,13 +120,12 @@ function ChangeBackground() {
                             className="relative border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center hover:border-muted-foreground/50 transition-colors"
                             onDrop={handleDrop}
                             onDragOver={(e) => e.preventDefault()}
-                            onDragEnter={(e) => e.preventDefault()}
                         >
                             <div className="space-y-4">
                                 <Upload className="h-12 w-12 mx-auto text-muted-foreground" />
                                 <div>
                                     <p className="text-lg font-medium">Drop your image here</p>
-                                    <p className="text-sm text-muted-foreground">or click to browse</p>
+                                    <p className="text-sm text-muted-foreground">or click to browse (only one file allowed)</p>
                                 </div>
                                 <input
                                     type="file"
@@ -120,19 +136,14 @@ function ChangeBackground() {
                             </div>
                         </div>
 
-                        {/* ✅ Single preview */}
                         {preview && (
-                            <div className="relative w-32 h-32 mx-auto">
-                                <img
-                                    src={preview}
-                                    alt="preview"
-                                    className="w-full h-full object-cover rounded-md border"
-                                />
+                            <div className="relative inline-block">
+                                <img src={preview} alt="preview" className="w-32 h-32 object-cover rounded-md border" />
                                 <button
                                     onClick={removeImage}
                                     className="absolute top-0 right-0 bg-black bg-opacity-50 text-white rounded-full p-1"
                                 >
-                                    <X className="h-3 w-3" />
+                                    <X className="h-4 w-4" />
                                 </button>
                             </div>
                         )}
@@ -169,14 +180,7 @@ function ChangeBackground() {
                                 <Button
                                     variant="secondary"
                                     size="lg"
-                                    onClick={() => {
-                                        const a = document.createElement("a")
-                                        a.href = finalImage
-                                        a.download = "generated-image.png"
-                                        document.body.appendChild(a)
-                                        a.click()
-                                        document.body.removeChild(a)
-                                    }}
+                                    onClick={handleDownload}
                                 >
                                     <Download className="h-4 w-4 mr-2" />
                                     Download Image
@@ -201,4 +205,5 @@ function ChangeBackground() {
     )
 }
 
-export default ChangeBackground
+export default ChangeBackground;
+

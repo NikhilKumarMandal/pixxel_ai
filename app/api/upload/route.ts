@@ -1,6 +1,6 @@
-import { imagekit, replicate } from "@/lib/config";
+import { imagekit } from "@/lib/config";
 import prisma from "@/lib/prisma";
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { currentUser } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 
 
@@ -32,21 +32,6 @@ export async function POST(req: NextRequest) {
             isPublished: true,
             useUniqueFileName: false,
         });
-
-
-        const thumbnailUrl = imagekit.url({
-            src: uploadResult.url,
-            transformation: [
-                {
-                    width: 400,
-                    height: 300,
-                    cropMode: "maintain_ar",
-                    quality: 80,
-                },
-            ],
-        });
-
-        ``
 
         const data = await prisma.project.create({
             data: {
