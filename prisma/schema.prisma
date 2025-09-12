@@ -13,11 +13,26 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id    String @id
-  email String @unique
+enum TrainingStatus {
+  starting
+  processing
+  succeeded
+  failed
+  canceled
+}
 
-  credits Int @default(0)
+enum Genders {
+  man
+  women
+}
+
+model User {
+  id    String  @id
+  email String  @unique
+  name  String?
+
+  credits     Int @default(0)
+  model_count Int @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -25,6 +40,26 @@ model User {
   images        Image[]
   projects      Project[]
   subscriptions Subscription[]
+  models        Model[]
+}
+
+model Model {
+  id            String          @id @default(uuid())
+  modelId       String?
+  modelName     String?
+  triggerWord   String?
+  version       String?
+  trainingSatus TrainingStatus?
+  trainingSteps Int?            @default(0)
+  trainingTime  String?
+  gender        Genders?        @default(man)
+  trainingId   String?
+  filePath  String?
+
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
 }
 
 model Project {

@@ -47,6 +47,7 @@
     "react-hook-form": "^7.62.0",
     "react-resizable-panels": "^3.0.5",
     "replicate": "^1.1.0",
+    "resend": "^6.0.3",
     "sonner": "^2.0.7",
     "svix": "^1.76.1",
     "tailwind-merge": "^3.3.1",
