@@ -181,6 +181,7 @@ function ChangeBackground() {
                                     variant="secondary"
                                     size="lg"
                                     onClick={handleDownload}
+                                    className="cursor-pointer"
                                 >
                                     <Download className="h-4 w-4 mr-2" />
                                     Download Image
@@ -195,7 +196,7 @@ function ChangeBackground() {
                         onClick={handleSubmit}
                         size="lg"
                         disabled={!image || loading}
-                        className="min-w-32"
+                        className="min-w-32 cursor-pointer"
                     >
                         {loading ? "Processing..." : "Upload Image"}
                     </Button>

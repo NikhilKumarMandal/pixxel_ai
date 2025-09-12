@@ -2,12 +2,14 @@
 
 import {
   Edit,
+  Hammer,
   Image,
   ImagePlus,
   Layers,
   LayoutGrid,
   RefreshCcw,
   ScanText,
+  Shapes,
   User,
   Wand2,
 } from "lucide-react"
@@ -71,6 +73,16 @@ const NavItems = [
     title: "change background",
     url: "/change-background",
     icon: Layers
+  },
+  {
+    title: "Train model",
+    url: "/model-training",
+    icon: Hammer
+  },
+  {
+    title: "Models",
+    url: "/models",
+    icon: Shapes
   }
 ]
 
