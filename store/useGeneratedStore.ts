@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { z } from "zod";
 import { toast } from "sonner";
 import { ImageGenerationFormSchema } from "@/components/ImageGeneration/Configuration"
-import { generateImageAction } from "@/app/action/image-actions";
+import { generateImageAction, storeImage } from "@/app/action/image-actions";
 
 
 interface GenerateState {
@@ -42,7 +42,14 @@ const useGeneratedStore = create<GenerateState>((set) => ({
 
             toast.success("Image generated successfully", { id: toastId });
 
+
+
             console.log(datatWithUrl, "dataWithUrl");
+
+            const urls = data.map((item: any) =>
+                typeof item === "string" ? item : item.url
+            );
+            await storeImage(urls);
 
         } catch (error: any) {
             console.log(error);

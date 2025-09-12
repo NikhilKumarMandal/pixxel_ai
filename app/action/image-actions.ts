@@ -66,6 +66,7 @@ export async function generateImageAction(input: (z.infer<typeof ImageGeneration
 
 
 export async function imgUrlToBuffer(url: string) {
+    
     const response = await fetch(url);
     const arrayBuffer = await response.arrayBuffer();
     return Buffer.from(arrayBuffer);
@@ -85,21 +86,28 @@ export async function storeImage(urls: string[]) {
 
     const savedImages = [];
 
+    console.log(urls,"URLS");
+    
+
     for (const imgUrl of urls) {
+ 
         const buffer = await imgUrlToBuffer(imgUrl);
 
-        // 2. Upload to ImageKit
         const upload = await imagekit.upload({
-            file: buffer, // actual file buffer
+            file: buffer, 
             fileName: `image_${randomUUID()}.jpg`,
+            isPublished: true,
+            useUniqueFileName: false,
         });
 
-        // 3. Save to DB
+        console.log("uploadUrl",upload.url);
+        
+
         const image = await prisma.image.create({
             data: {
                 url: upload.url,
                 userId: user.id,
-                fileId: upload.fileId
+                fileId: upload.fileId,
             },
         });
 
@@ -115,24 +123,39 @@ export async function storeImage(urls: string[]) {
 
 export async function getImage(limit?: number) {
 
-    const user = await currentUser();
-
-    if (!user) {
+    const user= await currentUser();
+    if (!user?.id) {
         return {
             error: "Unauthorized",
             success: false,
-            data: null
-        }
-    };
-
-    const imageWithUrls = null;
-
-    return {
-        error: null,
-        success: true,
-        data: imageWithUrls || null
+            data: null,
+        };
     }
 
+    try {
+        let images = await prisma.image.findMany({
+            where: { userId:user?.id },
+            orderBy: { createdAt: "desc" },
+            take: limit, 
+        });
+
+        const imageWithUrls = images.map((image) => ({
+            ...image,
+            url: image.url, 
+        }));
+
+        return {
+            error: null,
+            success: true,
+            data: imageWithUrls,
+        };
+    } catch (err: any) {
+        return {
+            error: err.message || "Failed to fetch images!",
+            success: false,
+            data: null,
+        };
+    }
 }
  
 

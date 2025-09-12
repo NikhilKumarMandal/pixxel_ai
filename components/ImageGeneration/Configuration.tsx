@@ -370,7 +370,7 @@ function Configuration() {
                         )}
                     />
                 </fieldset>
-                <Button type="submit" className='font-medium '>Generate</Button>
+                <Button type="submit" className='font-medium cursor-pointer'>Generate</Button>
             </form>
         </Form>
     )

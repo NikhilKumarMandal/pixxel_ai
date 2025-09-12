@@ -6,6 +6,7 @@ import {
   Image,
   ImagePlus,
   Layers,
+  LayoutDashboard,
   LayoutGrid,
   RefreshCcw,
   ScanText,
@@ -24,6 +25,11 @@ import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 
 const NavItems = [
+  {
+    title: "Dashboard",
+    url: "/dashboard",
+    icon: LayoutDashboard
+  },
   {
     title: "Editor",
     url: "/upload-image",
