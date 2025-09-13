@@ -30,6 +30,7 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from '../ui/textarea';
+import { Model } from '@prisma/client';
 
 
 export const ImageGenerationFormSchema = z.object({
@@ -54,14 +55,17 @@ export const ImageGenerationFormSchema = z.object({
 });
 
 
+interface ConfigurationProps {
+    userModels: Model[]
+    model_id?: string
+}
 
-
-function Configuration() {
+function Configuration({ userModels, model_id }: ConfigurationProps) {
     const generateImage = useGeneratedStore((state:any) => state.generateImage);
     const form = useForm<z.infer<typeof ImageGenerationFormSchema>>({
         resolver: zodResolver(ImageGenerationFormSchema),
         defaultValues: {
-            model: "black-forest-labs/flux-dev",
+            model: model_id ? `nikhilkumarmandal/${model_id}` : "black-forest-labs/flux-dev",
             prompt: "",
             guidance: 3.5,
             num_output: 1,
@@ -96,7 +100,18 @@ function Configuration() {
     async function onSubmit(values: z.infer<typeof ImageGenerationFormSchema>) {
         const newValues = {
             ...values,
-            prompt:  values.prompt
+            prompt: values.model.startsWith("nikhilkumarmandal/") ?
+                (() => {
+
+                    const modelId = values.model.replace("nikhilkumarmandal", "").split(":")[0];
+
+                    const selectedModel = userModels.find(model => model.id === modelId);
+
+
+
+                    return `photo of a ${selectedModel?.triggerWord || "ohwx"} ${selectedModel?.gender}, ${values.prompt}`
+                })()
+                : values.prompt
         }
         await generateImage(newValues);
     }
@@ -135,12 +150,16 @@ function Configuration() {
                                     <SelectContent>
                                         <SelectItem value="black-forest-labs/flux-dev">Flux dev</SelectItem>
                                         <SelectItem value="black-forest-labs/flux-schnell">Flux Schnell</SelectItem>
+                                        {
+                                            userModels?.map((model:any) => model.training_status === "succeeded" && <SelectItem key={model.id} value={`nikhilkumarmandal/${model.model_id}:${model.version}`}>{model.model_name}</SelectItem>)
+                                        }
                                     </SelectContent>
                                 </Select>
                                 <FormMessage />
                             </FormItem>
                         )}
                     />
+
 
                     <div className='grid grid-cols-2 gap-4'>
 

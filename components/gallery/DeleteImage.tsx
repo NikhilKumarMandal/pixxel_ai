@@ -21,10 +21,10 @@ interface DeleteImageProps {
     imageId: string;
     onDelete?: () => void;
     className?: string;
-    imageName: string
+    fileId: string
 }
 
-function DeleteImage({ imageId, onDelete, className, imageName }: DeleteImageProps) {
+function DeleteImage({ imageId, onDelete, className, fileId }: DeleteImageProps) {
 
     const toastId = useId();
 
@@ -32,7 +32,7 @@ function DeleteImage({ imageId, onDelete, className, imageName }: DeleteImagePro
 
         toast.loading("Deleting the image...", { id: toastId });
 
-        const { error, success } = await deleteImage(imageId);
+        const { error, success } = await deleteImage(imageId, fileId);
 
 
         if (error) {

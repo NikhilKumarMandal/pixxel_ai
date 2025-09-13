@@ -30,7 +30,19 @@ export async function generateImageAction(input: (z.infer<typeof ImageGeneration
         }
     };
 
-    const modalInput = {
+    const modalInput = input.model.startsWith("nikhilkumarmandal/") ? {
+        model: "dev",
+        prompt: input.prompt,
+        lora_scale: 1,
+        guidance: input.guidance,
+        num_outputs: input.num_output,
+        aspect_ratio: input.aspect_ration,
+        output_format: input.output_format,
+        output_quality: input.output_quality,
+        prompt_strength: 0.8,
+        num_inference_steps: input.num_inference_steps,
+        extra_lora_scale: 0
+    } : {
         prompt: input.prompt,
         go_fast: true,
         guidance: input.guidance,
@@ -159,7 +171,7 @@ export async function getImage(limit?: number) {
 }
  
 
-export async function deleteImage(id: string, ) {
+export async function deleteImage(id: string, fileId: string ) {
     const user = await currentUser();
 
     if (!user) {
@@ -170,12 +182,25 @@ export async function deleteImage(id: string, ) {
         }
     };
 
+    await imagekit.deleteFile(fileId);
 
+    const image = await prisma.image.delete({
+        where: {
+            id: id
+        }
+    })
 
-    const data = "";
+    if (!image) {
+        return {
+            error: "image not found!",
+            success: false,
+            data: null
+        };
+    }
+
     return {
         error: null,
         success: true,
-        data: data
+        data: image
     }
 }

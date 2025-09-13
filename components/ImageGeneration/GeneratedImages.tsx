@@ -50,8 +50,8 @@ function GeneratedImages() {
                     </CarouselItem>
                 ))}
             </CarouselContent>
-            <CarouselPrevious />
-            <CarouselNext />
+            <CarouselPrevious  className='text-black' />
+            <CarouselNext className='text-black' />
         </Carousel>
     )
 }

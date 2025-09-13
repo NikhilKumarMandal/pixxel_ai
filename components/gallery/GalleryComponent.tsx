@@ -43,7 +43,7 @@ function GalleryComponent({ images }: GalleryProps) {
                                 </div>
                                 <img
                                     src={image.url!}
-                                    alt={image?.prompt!}
+                                    alt={image.url}
                                     className='object-cover rounded'
                                 />
                             </div>

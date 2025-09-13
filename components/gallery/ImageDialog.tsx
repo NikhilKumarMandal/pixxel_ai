@@ -7,7 +7,6 @@ import {
 } from "@/components/ui/sheet"
 import { Button } from '../ui/button'
 import { Download } from 'lucide-react'
-import { Badge } from '../ui/badge'
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import DeleteImage from './DeleteImage'
 
@@ -16,16 +15,9 @@ import DeleteImage from './DeleteImage'
 export interface Image {
     id: string;
     url: string;
-    output_format: string;
-    prompt: string;
-    image_name: string;
-    model: string;
-    aspect_ratio: string;
-    width: number;
-    height: number;
-    guidance: number;
-    num_inference_steps: number;
-    created_at: Date;
+    fileId: string;
+    userId: string;
+    createdAt: Date
 }
 
 
@@ -43,7 +35,7 @@ function ImageDialog({ image, onClose }: ImageDialogProps) {
 
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute("download", `generated-image-${Date.now()}.${image?.output_format}`);
+            link.setAttribute("download", `generated-image-${Date.now()}.jpg`);
 
             document.body.appendChild(link);
 
@@ -69,7 +61,7 @@ function ImageDialog({ image, onClose }: ImageDialogProps) {
                         <div className='relative w-fit h-fit'>
                             <img
                                 src={image.url!}
-                                alt={image.prompt!}
+                                alt={"images"}
                                 className='w-full h-auto rounded flex mb-3'
                             />
                         </div>
@@ -80,7 +72,7 @@ function ImageDialog({ image, onClose }: ImageDialogProps) {
                                 Download
                             </Button>
 
-                            <DeleteImage imageId={image.id.toString()} onDelete={onClose} className='w-fit' imageName={image?.image_name!} />
+                            <DeleteImage imageId={image.id.toString()} onDelete={onClose} className='w-fit' fileId={image.fileId}  />
                         </div>
                         <ScrollBar orientation='vertical' />
                     </ScrollArea>
