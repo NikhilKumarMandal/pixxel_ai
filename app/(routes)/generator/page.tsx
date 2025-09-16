@@ -68,7 +68,6 @@ export default function ImageGenerator() {
             setGeneratedImage(data.uploadedImage)
         } catch (error: any) {
             console.error("Frontend Error:", error.message)
-            alert(error.message)
         } finally {
             setLoading(false)
         }

@@ -12,13 +12,14 @@ import { Upload, Download, X } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useCreditStore } from "@/store/store"
 import { toast } from "sonner"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
  
 
 const formSchema = z.object({
     prompt: z.string().min(5, { message: "Prompt must be at least 5 characters." }),
-    // size: z.enum(["default", "square", "portrait", "landscape", "custom"]),
-    // width: z.number().optional(),
-    // height: z.number().optional(),
+    size: z.enum(["default", "square", "portrait", "landscape", "custom"]),
+    width: z.number().optional(),
+    height: z.number().optional(),
 })
 
 type FormValues = z.infer<typeof formSchema>
@@ -32,9 +33,9 @@ export default function ImageGeneratorUI() {
         resolver: zodResolver(formSchema),
         defaultValues: {
             prompt: "",
-            // size: "default",
-            // width: 512,
-            // height: 512,
+            size: "default",
+            width: 512,
+            height: 512,
         },
     })
 
@@ -82,9 +83,9 @@ export default function ImageGeneratorUI() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     prompt: values.prompt,
-                    // size: values.size,
-                    // width: values.width,
-                    // height: values.height,
+                    size: values.size,
+                    width: values.width,
+                    height: values.height,
                     images: base64Images,
                 }),
             })
@@ -97,7 +98,6 @@ export default function ImageGeneratorUI() {
             setGeneratedImage(data.generatedUrl)
         } catch (err: any) {
             console.error("Generate error:", err.message)
-            alert(err.message)
         } finally {
             setIsLoading(false)
         }
@@ -169,7 +169,7 @@ export default function ImageGeneratorUI() {
                                 </div>
                             </div>
 
-                            {/* <div className="space-y-2">
+                             <div className="space-y-2">
                                 <label className="text-sm font-medium">Image Size</label>
                                 <Select
                                     value={form.watch("size")}
@@ -199,7 +199,7 @@ export default function ImageGeneratorUI() {
                                         />
                                     </div>
                                 )}
-                            </div> */}
+                            </div> 
 
                             <Button
                                 disabled={isLoading || credit! < 2}

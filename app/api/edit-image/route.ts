@@ -30,33 +30,33 @@ export async function POST(req: NextRequest) {
         }
 
         const body = await req.json()
-        const { prompt,  images } = body
+        const { prompt, size, width, height,  images } = body
         //size, width, height,
         // 1. Determine final width/height based on size
-        // let finalWidth = 512
-        // let finalHeight = 512
+        let finalWidth = 512
+        let finalHeight = 512
 
-        // switch (size) {
-        //     case "square":
-        //         finalWidth = 512
-        //         finalHeight = 512
-        //         break
-        //     case "portrait":
-        //         finalWidth = 512
-        //         finalHeight = 768 // 3:4
-        //         break
-        //     case "landscape":
-        //         finalWidth = 1024
-        //         finalHeight = 576 // 16:9
-        //         break
-        //     case "custom":
-        //         finalWidth = width || 512
-        //         finalHeight = height || 512
-        //         break
-        //     default: // "default"
-        //         finalWidth = 512
-        //         finalHeight = 512
-        // }
+        switch (size) {
+            case "square":
+                finalWidth = 512
+                finalHeight = 512
+                break
+            case "portrait":
+                finalWidth = 512
+                finalHeight = 768 // 3:4
+                break
+            case "landscape":
+                finalWidth = 1024
+                finalHeight = 576 // 16:9
+                break
+            case "custom":
+                finalWidth = width || 512
+                finalHeight = height || 512
+                break
+            default: // "default"
+                finalWidth = 512
+                finalHeight = 512
+        }
 
         // 2. Upload images to ImageKit
         const uploadedUrls: string[] = []
@@ -77,8 +77,8 @@ export async function POST(req: NextRequest) {
             input: {
                 prompt,
                 image_urls: uploadedUrls,
-                // width: finalWidth,
-                // height: finalHeight,
+                width: finalWidth,
+                height: finalHeight,
             },
             logs: true,
             onQueueUpdate: (update) => {
