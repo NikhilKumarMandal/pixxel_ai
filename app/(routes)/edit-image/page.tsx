@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useId, useState } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Upload, Download, X } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useCreditStore } from "@/store/store"
+import { toast } from "sonner"
  
 
 const formSchema = z.object({
@@ -26,7 +27,7 @@ export default function ImageGeneratorUI() {
     const [images, setImages] = useState<File[]>([])
     const [generatedImage, setGeneratedImage] = useState<string | null>(null)
     const [isLoading, setIsLoading] = useState<boolean>(false)
-
+    const toastId = useId();
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema),
         defaultValues: {
@@ -86,8 +87,12 @@ export default function ImageGeneratorUI() {
                 }),
             })
 
+            toast.loading("generating...", { id: toastId });
+
             const data = await res.json()
             if (!res.ok) throw new Error(data.error || "Image generation failed")
+            
+            toast.success("Image generated successfully!", { id: toastId });
 
             setGeneratedImage(data.generatedUrl)
         } catch (err: any) {
@@ -98,12 +103,22 @@ export default function ImageGeneratorUI() {
         }
     }
 
-    const handleDownload = () => {
+    const handleDownload = async () => {
         if (!generatedImage) return
-        const link = document.createElement("a")
-        link.href = generatedImage
-        link.download = "generated-image.png"
-        link.click()
+        try {
+            const response = await fetch(generatedImage, { mode: "cors" });
+            const blob = await response.blob();
+            const blobUrl = window.URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = blobUrl;
+            link.download = "upscaleImage.jpg";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(blobUrl);
+        } catch (error) {
+            console.error("Download failed", error);
+        }
     }
 
     return (
