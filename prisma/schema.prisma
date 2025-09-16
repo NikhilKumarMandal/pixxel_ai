@@ -32,34 +32,13 @@ model User {
   name  String?
 
   credits     Int @default(0)
-  model_count Int @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   images        Image[]
   projects      Project[]
-  subscriptions Subscription[]
-  models        Model[]
-}
-
-model Model {
-  id            String          @id @default(uuid())
-  modelId       String?
-  modelName     String?
-  triggerWord   String?
-  version       String?
-  trainingSatus TrainingStatus?
-  trainingSteps Int?            @default(0)
-  trainingTime  String?
-  gender        Genders?        @default(man)
-  trainingId   String?
-  filePath  String?
-
-  createdAt DateTime @default(now())
-
-  user   User   @relation(fields: [userId], references: [id])
-  userId String
+  purchases Purchase[] 
 }
 
 model Project {
@@ -86,53 +65,44 @@ model Image {
   createdAt DateTime @default(now())
 }
 
-model Plan {
-  id                 String  @id @default(uuid())
-  productId          Int
-  productName        String
-  variantId          Int     @unique
-  name               String
-  description        String?
-  price              String
-  isUsageBased       Boolean
-  interval           String?
-  intervalCount      Int?
-  trialInterval      String?
-  trialIntervalCount Int?
-  sort               Int
+model Purchase {
+  id        Int      @id @default(autoincrement())
 
-  subscriptions Subscription[]
-}
+  variantId Int
+  variant   Variant  @relation(fields: [variantId], references: [id])
 
-model WebhookEvent {
-  id              String  @id @default(uuid())
-  eventName       String
-  processed       Boolean
-  body            Json
-  processingError String
+  tokensGranted Int
+
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
 
   createdAt DateTime @default(now())
 }
 
-model Subscription {
+model Product {
+  id          Int       @id @default(autoincrement())
+  productId   Int       @unique
+  name        String
+  description String?
+  media       String[]  @db.Text
+  variants    Variant[]
+}
+
+model Variant {
   id                 Int     @id @default(autoincrement())
-  lemonSqueezyId     String  @unique
-  orderId            Int
+  variantId          Int     @unique
   name               String
-  email              String
-  status             String
-  statusFormatted    String
-  renewsAt           String?
-  endsAt             String?
-  trialEndsAt        String?
+  description        String?
   price              String
   isUsageBased       Boolean @default(false)
-  isPaused           Boolean @default(false)
-  subscriptionItemId Int     @default(autoincrement())
-  userId             String
-  planId             String
+  interval           String?
+  intervalCount      Int?
+  trialInterval      String?
+  trialIntervalCount Int?
+  sort               Int?
 
-  // Relations
-  user User @relation(fields: [userId], references: [id])
-  plan Plan @relation(fields: [planId], references: [id])
+  productId Int
+  product   Product @relation(fields: [productId], references: [id])
+
+  purchases Purchase[]
 }

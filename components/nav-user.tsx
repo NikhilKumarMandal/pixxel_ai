@@ -1,23 +1,16 @@
 "use client"
 
 import {
-  BadgeCheck,
-  Bell,
   ChevronsUpDown,
-  CreditCard,
   LogOut,
-  Sparkles,
 } from "lucide-react"
-
 import {
   Avatar,
   AvatarFallback,
-  AvatarImage,
 } from "@/components/ui/avatar"
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -29,7 +22,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-import Link from "next/link"
+import { SignOutButton } from "@clerk/nextjs"
 
 export function NavUser({
   user,
@@ -80,24 +73,13 @@ export function NavUser({
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <Link href={"/account-settings"} className="w-full cursor-pointer">
-                <DropdownMenuItem>
-                  <BadgeCheck />
-                  Setting
-                </DropdownMenuItem>
-              </Link>
-              <Link href={"/billing"} className="w-full cursor-pointer">
-                <DropdownMenuItem>
-                  <CreditCard />
-                  Billing
-                </DropdownMenuItem>
-              </Link>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
             <DropdownMenuItem>
-              <LogOut className="size-4 text-destructive" />
-              {/* <LogoutBtn /> */}
+              <SignOutButton>
+                <div className="flex items-center">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span className="text-destructive">Log out</span>
+                </div>
+              </SignOutButton>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

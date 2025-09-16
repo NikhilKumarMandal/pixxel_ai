@@ -2,160 +2,123 @@
 'use server'
 
 import { configureLemonSqueezy } from '@/config/lemonsqueezy'
-import prisma from '@/lib/prisma'
 import { currentUser } from '@clerk/nextjs/server'
-import { cancelSubscription, createCheckout, getPrice, getProduct, getSubscription, listPrices, listProducts, updateSubscription } from '@lemonsqueezy/lemonsqueezy.js'
-import { notFound } from "next/navigation";
-import { revalidatePath } from "next/cache";
-import { Prisma } from '@prisma/client'
+import {
+    createCheckout,
+    getProduct,
+    listPrices,
+    listProducts,
+    Variant,
+} from '@lemonsqueezy/lemonsqueezy.js'
+import { PrismaClient } from '@prisma/client'
 
-export type NewWebhookEvent = {
-    id: string
-    eventName: string
-    processed: boolean
-    body: any
-    processingError: string
-    createdAt: Date
-}
-
-export type Subscription = {
-    id: string
-    lemonSqueezyId: string
-    orderId: number
-    name: string
-    email: string
-    status: string
-    statusFormatted: string
-    renewsAt?: string | null
-    endsAt?: string | null
-    trialEndsAt?: string | null
-    price: string
-    isUsageBased: boolean
-    isPaused: boolean
-    subscriptionItemId: number
-    userId: string
-    planId: string
-};
-
-// Input type for creating a new subscription
-export type NewSubscription = Omit<Subscription, "id"> 
-
-// Define the type for a new plan
-export type NewPlan = {
-    id?: string // Prisma UUID
-    name: string
-    description: string | null
-    price: string
-    interval: string | null
-    intervalCount: number | null
-    isUsageBased: boolean
-    productId: number
-    productName: string
-    variantId: number
-    trialInterval: string | null
-    trialIntervalCount: number | null
-    sort: number
-}
-
-// Local Variant type (simplified)
-type Variant = {
-    id: string
-    attributes: {
-        name: string
-        description: string | null
-        product_id: number
-        status: string
-        sort: number
-    }
-}
+const prisma = new PrismaClient()
 
 export async function syncPlans() {
     configureLemonSqueezy()
 
-    const productVariants = await prisma.plan.findMany()
-
-    async function _addVariant(variant: Prisma.PlanUncheckedCreateInput) {
-        console.log(`Syncing variant ${variant.name} with the database...`)
-
-        const record = await prisma.plan.upsert({
-            where: { variantId: variant.variantId },
-            update: variant, // ✅ type-checked
-            create: variant,
-        })
-
-        console.log(`${variant.name} synced with the database...`)
-        productVariants.push(record)
-    }
-
     const products = await listProducts({
-        filter: { storeId: process.env.LEMONSQUEEZY_STORE_ID },
-        include: ["variants"],
+        filter: { storeId: process.env.LEMON_SQUEEZY_STORE_ID },
+        include: ['variants'],
     })
 
-    const allVariants = products.data?.included as Variant[] | undefined
 
-    if (allVariants) {
-        for (const v of allVariants) {
-            const variant = v.attributes
 
-            if (
-                variant.status === "draft" ||
-                (allVariants.length !== 1 && variant.status === "pending")
-            ) {
-                continue
-            }
+    const allVariants = products.data?.included as Variant['data'][] | undefined
+    if (!allVariants) return []
 
-            const productName =
-                (await getProduct(variant.product_id)).data?.data.attributes.name ?? ""
+    console.log("✨ All Variants:", allVariants.map(v => ({
+        id: v.id,
+        name: v.attributes.name,
+        status: v.attributes.status,
+        is_subscription: v.attributes.is_subscription,
+    })))
 
-            const variantPriceObject = await listPrices({
-                filter: { variantId: v.id },
-            })
+    for (const v of allVariants) {
+        const variant = v.attributes
 
-            const currentPriceObj = variantPriceObject.data?.data.at(0)
-            const isUsageBased =
-                currentPriceObj?.attributes.usage_aggregation !== null
+        // ✅ Skip only draft variants (ignore "pending" unless you want them too)
+        if (variant.status === 'draft') continue
 
-            const interval =
-                currentPriceObj?.attributes.renewal_interval_unit ?? null
-            const intervalCount =
-                currentPriceObj?.attributes.renewal_interval_quantity ?? null
-            const trialInterval =
-                currentPriceObj?.attributes.trial_interval_unit ?? null
-            const trialIntervalCount =
-                currentPriceObj?.attributes.trial_interval_quantity ?? null
+        // Get Product info
+        const productRes = await getProduct(variant.product_id)
+        const productName = productRes.data?.data.attributes.name ?? ''
+        const productDescription = productRes.data?.data.attributes.description ?? ''
 
-            const price = isUsageBased
-                ? currentPriceObj?.attributes.unit_price_decimal
-                : currentPriceObj?.attributes.unit_price
+        // Ensure Product exists
+        const product = await prisma.product.upsert({
+            where: { productId: variant.product_id },
+            update: { name: productName, description: productDescription },
+            create: {
+                productId: variant.product_id,
+                name: productName,
+                description: productDescription,
+            },
+        })
 
-            const priceString =
-                price !== null && price !== undefined ? price.toString() : ""
+        // ✅ Price info
+        const variantPriceObject = await listPrices({ filter: { variantId: v.id } })
+        const currentPriceObj = variantPriceObject.data?.data.at(0)
 
-            const isSubscription =
-                currentPriceObj?.attributes.category === "subscription"
+        const isUsageBased = currentPriceObj?.attributes.usage_aggregation !== null
+        const interval = currentPriceObj?.attributes.renewal_interval_unit ?? null
+        const intervalCount = currentPriceObj?.attributes.renewal_interval_quantity ?? null
+        const trialInterval = currentPriceObj?.attributes.trial_interval_unit ?? null
+        const trialIntervalCount = currentPriceObj?.attributes.trial_interval_quantity ?? null
 
-            if (!isSubscription) continue
+        const price = isUsageBased
+            ? currentPriceObj?.attributes.unit_price_decimal
+            : currentPriceObj?.attributes.unit_price
 
-            await _addVariant({
-                name: variant.name,
-                description: variant.description,
+        const priceString = price ? price.toString() : '0'
+
+        // ✅ Store all variants (subscription or one-time)
+        await prisma.variant.upsert({
+            where: { variantId: parseInt(v.id) },
+            update: {
+                name: variant.name || productName,
+                description: variant.description || productDescription,
                 price: priceString,
                 interval,
                 intervalCount,
                 isUsageBased,
-                productId: variant.product_id,
-                productName,
-                variantId: parseInt(v.id),
                 trialInterval,
                 trialIntervalCount,
                 sort: variant.sort,
-            })
-        }
+                productId: product.id,
+            },
+            create: {
+                variantId: parseInt(v.id),
+                name: variant.name || productName,
+                description: variant.description || productDescription,
+                price: priceString,
+                interval,
+                intervalCount,
+                isUsageBased,
+                trialInterval,
+                trialIntervalCount,
+                sort: variant.sort,
+                productId: product.id,
+            },
+        })
     }
 
-    return productVariants
+    // ✅ Return enriched variants with product info
+    const variantsWithProduct = await prisma.variant.findMany({
+        include: { product: true },
+    })
+
+    console.log(variantsWithProduct);
+
+
+    return variantsWithProduct.map((variant) => ({
+        ...variant,
+        productName: variant.product.name,
+    }))
 }
+
+
+
 
 export async function getCheckoutURL(variantId: number, embed = false) {
     configureLemonSqueezy()
@@ -173,7 +136,7 @@ export async function getCheckoutURL(variantId: number, embed = false) {
     })
 
     const checkout = await createCheckout(
-        process.env.LEMONSQUEEZY_STORE_ID!,
+        process.env.LEMON_SQUEEZY_STORE_ID!,
         variantId,
         {
             checkoutOptions: {
@@ -198,255 +161,4 @@ export async function getCheckoutURL(variantId: number, embed = false) {
 
     console.log(checkout);
     return checkout.data?.data?.attributes?.url
-};
-
-export async function storeWebhookEvent(
-    eventName: string,
-    body: NewWebhookEvent["body"]
-) {
-    if (!process.env.DATABASE_URL) {
-        throw new Error("DATABASE_URL is not set")
-    }
-
-    try {
-        const event = await prisma.webhookEvent.create({
-            data: {
-                eventName,
-                processed: false,
-                body,
-                processingError: "",
-            },
-        })
-        return event
-    } catch (err: any) {
-        if (err.code === "P2002") {
-            return null
-        }
-        throw err
-    }
-};
-
-export async function processWebhookEvent(webhookEvent: NewWebhookEvent) {
-    if (!process.env.WEBHOOK_URL) {
-        throw new Error("Missing required WEBHOOK_URL env variable. Please, set it in your .env file.")
-    }
-
-    const eventBody = webhookEvent.body
-    let processingError = ""
-
-    try {
-        // ✅ subscription-related events
-        if (webhookEvent.eventName.startsWith("subscription_")) {
-            const attributes = eventBody.data.attributes
-            const variantId = attributes.variant_id as string
-
-            // Find plan by variantId
-            const plan = await prisma.plan.findUnique({
-                where: { variantId: parseInt(variantId, 10) },
-            })
-
-            if (!plan) {
-                throw new Error(`Plan with variantId ${variantId} not found.`)
-            }
-
-            // Get LemonSqueezy price info
-            const priceId = attributes.first_subscription_item.price_id
-            const priceData = await getPrice(priceId)
-            if (priceData.error) {
-                throw new Error(`Failed to get the price data for subscription ${eventBody.data.id}.`)
-            }
-
-            const isUsageBased = attributes.first_subscription_item.is_usage_based
-            const price = isUsageBased
-                ? priceData.data?.data.attributes.unit_price_decimal
-                : priceData.data?.data.attributes.unit_price
-
-            // Prepare subscription data
-            const updateData = {
-                lemonSqueezyId: eventBody.data.id,
-                orderId: attributes.order_id as number,
-                name: attributes.user_name as string,
-                email: attributes.user_email as string,
-                status: attributes.status as string,
-                statusFormatted: attributes.status_formatted as string,
-                renewsAt: attributes.renews_at as string | null,
-                endsAt: attributes.ends_at as string | null,
-                trialEndsAt: attributes.trial_ends_at as string | null,
-                price: price?.toString() ?? "",
-                isPaused: false,
-                subscriptionItemId: parseInt(attributes.first_subscription_item.id, 10),
-                isUsageBased: attributes.first_subscription_item.is_usage_based,
-                userId: eventBody.meta.custom_data.user_id,
-                planId: plan.id,
-            }
-
-            // ✅ Upsert subscription in Prisma
-            const subscription = await prisma.subscription.upsert({
-                where: { lemonSqueezyId: eventBody.data.id },
-                update: updateData,
-                create: updateData,
-            })
-
-            // ✅ Manage credits based on subscription status
-            if (subscription.status === "active") {
-                await prisma.user.update({
-                    where: { id: subscription.userId },
-                    data: { credits: { increment: 100 } }, // add 100 credits
-                })
-            }
-
-            if (subscription.status === "expired" || subscription.status === "cancelled") {
-                await prisma.user.update({
-                    where: { id: subscription.userId },
-                    data: { credits: { set: 0 } }, // reset credits to 0
-                })
-            }
-        }
-
-        // ✅ Mark webhook as processed
-        await prisma.webhookEvent.update({
-            where: { id: webhookEvent.id },
-            data: {
-                processed: true,
-                processingError,
-            },
-        })
-    } catch (err: any) {
-        processingError = err.message
-
-        // Update webhook with error
-        await prisma.webhookEvent.update({
-            where: { id: webhookEvent.id },
-            data: {
-                processed: false,
-                processingError,
-            },
-        })
-
-        console.error("Webhook processing failed:", err)
-    }
-};
-
-
-export async function getUserSubscriptions() {
-    const user = await currentUser();
-    const userId = user?.id;
-
-    if (!userId) {
-        notFound();
-    }
-
-
-    return await prisma.subscription.findMany({
-        where: {
-            userId: userId,
-        },
-    })
-}
-
-
-
-export async function changePlan(currentPlanId: string, newPlanId: string) {
-    configureLemonSqueezy()
-
-    // Get user subscriptions
-    const userSubscriptions = await getUserSubscriptions()
-
-    // Check if the subscription exists
-    const subscription = userSubscriptions.find(
-        (sub) => sub.planId === currentPlanId
-    )
-
-    if (!subscription) {
-        throw new Error(`No subscription with plan id #${currentPlanId} was found.`)
-    }
-
-    // Get the new plan details from the database
-    const newPlan = await prisma.plan.findUniqueOrThrow({
-        where: { id: newPlanId },
-    })
-
-    // Send request to Lemon Squeezy to change the subscription
-    const updatedSub = await updateSubscription(subscription.lemonSqueezyId, {
-        variantId: newPlan.variantId,
-    })
-
-    // Save in db
-    try {
-        await prisma.subscription.update({
-            where: { lemonSqueezyId: subscription.lemonSqueezyId },
-            data: {
-                planId: newPlanId,
-                price: newPlan.price,
-                endsAt: updatedSub.data?.data.attributes.ends_at ?? null,
-            },
-        })
-    } catch (error) {
-        throw new Error(
-            `Failed to update Subscription #${subscription.lemonSqueezyId} in the database.`
-        )
-    }
-
-    revalidatePath("/")
-
-    return updatedSub
-}
-
-
-
-export async function getSubscriptionURLs(id: string) {
-    configureLemonSqueezy();
-    const subscription = await getSubscription(id);
-
-    if (subscription.error) {
-        throw new Error(subscription.error.message);
-    }
-
-    revalidatePath("/");
-
-    return subscription.data.data.attributes.urls;
-}
-
-
-export async function cancelSub(id: string) {
-    configureLemonSqueezy();
-
-    // Get user subscriptions from Prisma
-    const userSubscriptions = await getUserSubscriptions();
-
-    // Check if the subscription exists
-    const subscription = userSubscriptions.find(
-        (sub) => sub.lemonSqueezyId === id
-    );
-
-    if (!subscription) {
-        throw new Error(`Subscription #${id} not found.`);
-    }
-
-    // Cancel in LemonSqueezy
-    const cancelledSub = await cancelSubscription(id);
-
-    if ((cancelledSub as any).error) {
-        throw new Error((cancelledSub as any).error.message);
-    }
-
-    // Update subscription in Prisma
-    try {
-        await prisma.subscription.update({
-            where: { lemonSqueezyId: id },
-            data: {
-                status: cancelledSub?.data?.data.attributes.status,
-                statusFormatted: cancelledSub?.data?.data.attributes.status_formatted,
-                endsAt: cancelledSub?.data?.data.attributes.ends_at ?? null, 
-            },
-        });
-    } catch (error) {
-        throw new Error(
-            `Failed to cancel Subscription #${id} in the database.`
-        );
-    }
-
-    revalidatePath("/");
-
-    return cancelledSub;
 }

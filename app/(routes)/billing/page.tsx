@@ -1,28 +1,20 @@
-import { Plans } from "@/components/billing/plans/plans";
-import { Subscriptions } from "@/components/billing/subscription/subscriptions";
-import { DashboardContent } from "@/components/content";
-import { CardSkeleton } from "@/components/skeletons/card";
-import { PlansSkeleton } from "@/components/skeletons/plans";
-import { Suspense } from "react";
+/* src/app/dashboard/billing/page.tsx */
 
+import { Suspense } from 'react'
+import { Plans } from './plans/plans'
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic'
 
 export default function BillingPage() {
   return (
-    <DashboardContent
-      title="Billing"
-      subtitle="View and manage your billing information." 
-    >
-      <div>
-        <Suspense fallback={<CardSkeleton className="h-[106px]" />}>
-          <Subscriptions />
-        </Suspense>
-
-        <Suspense fallback={<PlansSkeleton />}>
-          <Plans />
-        </Suspense>
-      </div>
-    </DashboardContent>
-  );
+    <div>
+      <Suspense fallback={
+        <div className="flex h-[calc(100vh-34px)] w-full items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-cyan-400 border-solid"></div>
+        </div>
+      }>
+        <Plans />
+      </Suspense>
+    </div>
+  )
 }

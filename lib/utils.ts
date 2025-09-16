@@ -1,4 +1,4 @@
-import { Genders, TrainingStatus } from "@prisma/client";
+
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 
@@ -38,34 +38,6 @@ export function formatDate(date: string | number | Date | null | undefined) {
 
 
 
-export function mapReplicateStatus(status: string): TrainingStatus {
-  switch (status) {
-    case "starting":
-      return TrainingStatus.starting;
-    case "processing":
-      return TrainingStatus.processing;
-    case "completed":
-      return TrainingStatus.succeeded;
-    case "failed":
-      return TrainingStatus.failed;
-    case "canceled":
-    case "aborted": // map "aborted" to canceled
-      return TrainingStatus.canceled;
-    default:
-      return TrainingStatus.failed; // fallback
-  }
-}
 
 
-export function mapGender(gender: string): Genders {
-  switch (gender.toLowerCase()) {
-    case "male":
-    case "man":
-      return Genders.man;
-    case "female":
-    case "woman":
-      return Genders.women;
-    default:
-      return Genders.man; // default fallback
-  }
-}
+

@@ -53,8 +53,8 @@ export default function RemoveBackground() {
         }
     }
 
-     const router = useRouter()
-    const { credit } = useCreditStore();
+         const router = useRouter()
+        const { credit } = useCreditStore();
 
     const handleProcess = async () => {
         if (credit! < 2) {
@@ -67,9 +67,9 @@ export default function RemoveBackground() {
             const formData = new FormData()
             formData.append("image", selectedImage)
 
-            toast.loading("removing background...", { id: toastId });
+            toast.loading("upscaling image...", { id: toastId });
 
-            const res = await fetch("/api/remove-bg", {
+            const res = await fetch("/api/upscale-image", {
                 method: "POST",
                 body: formData,
             });
@@ -86,7 +86,7 @@ export default function RemoveBackground() {
                 setProcessedImageUrl(data.upscaleUrl)
             }
         } catch (err: any) {
-            toast.error(err.message || "Something went wrong",{ id: toastId })
+            toast.error(err.message || "Something went wrong", { id: toastId })
         } finally {
             setLoading(false)
         }
@@ -121,7 +121,7 @@ export default function RemoveBackground() {
                 <CardContent className="p-6">
                     <div className="space-y-4">
                         <div className="text-center">
-                            <h1 className="text-2xl font-semibold text-white">Remove Background Image</h1>
+                            <h1 className="text-2xl font-semibold text-white">Restore Image</h1>
                             <p className="text-sm text-muted-foreground mt-1">
                                 {processedImageUrl ? "Image processed successfully" : "Select an image to process"}
                             </p>

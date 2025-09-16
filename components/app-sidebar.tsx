@@ -15,27 +15,40 @@ import {
 } from "@/components/ui/sidebar"
 
 import { NavUser } from "./nav-user"
-import { useUser, RedirectToSignIn } from "@clerk/nextjs"
-import { useRouter } from "next/navigation";
+import { useUser } from "@clerk/nextjs"
+import { NavSecondary } from "./nav-secondary";
+import { getCredits } from "@/app/action/self";
+import { useCreditStore } from "@/store/store";
 
 
 export  function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { isSignedIn, user: userData } = useUser()
 
-  const { isSignedIn, user: userData } = useUser();
-  
+  const { credit, setCredit } = useCreditStore()
+  const [loading, setLoading] = React.useState(true)
+
   React.useEffect(() => {
-    if (!isSignedIn) {
-      RedirectToSignIn;
+    async function fetchCredits() {
+      if (isSignedIn) {
+        setLoading(true)
+        const res = await getCredits()
+        if (res.success) {
+          setCredit(res.data ?? 0) // ✅ save into store
+        }
+        setLoading(false)
+      }
     }
-  }, [isSignedIn]);
+    fetchCredits()
+  }, [isSignedIn, setCredit])
 
-  if (!isSignedIn) return null;
+  if (!isSignedIn) return null
 
-
-  const user:any = {
+  const user: any = {
     name: userData?.fullName,
-    email: userData?.primaryEmailAddress?.emailAddress
+    email: userData?.primaryEmailAddress?.emailAddress,
   }
+
+
 
 
   return (
@@ -50,12 +63,12 @@ export  function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) 
           </div>
           <div className="grid flex-1 text-left text-sm leading-tight">
             <span className="truncate font-medium">Pixxel Ai</span>
-            <span className="truncate text-xs">Pro</span>
           </div>
         </SidebarMenuButton>
       </SidebarHeader>
       <SidebarContent className="bg-[#141414] text-white">
         <NavMain />
+        <NavSecondary credits={loading ? undefined : credit! ?? 0} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter className="bg-[#141414] text-white">
         <NavUser user={user} />

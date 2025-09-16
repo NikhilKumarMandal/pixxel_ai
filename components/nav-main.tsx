@@ -1,17 +1,11 @@
 "use client"
 
 import {
-  Edit,
-  Hammer,
   Image,
-  ImagePlus,
-  Layers,
-  LayoutDashboard,
   LayoutGrid,
   RefreshCcw,
-  ScanText,
-  Shapes,
-  User,
+  Sparkle,
+  Wallet,
   Wand2,
 } from "lucide-react"
 import {
@@ -26,34 +20,14 @@ import { cn } from "@/lib/utils"
 
 const NavItems = [
   {
-    title: "Dashboard",
-    url: "/dashboard",
-    icon: LayoutDashboard
-  },
-  {
-    title: "Editor",
-    url: "/upload-image",
-    icon: Edit
-  },
-  {
-    title: "Gallery",
-    url: "/gallery",
-    icon: LayoutGrid
-  },
-  {
     title: "Generate Image",
-    url: "/Image-generation",
+    url: "/generator",
     icon: Image
   },
   {
-    title: "Generate Headsort",
-    url: "/generate-headsort",
-    icon: User
-  },
-  {
-    title: "Upscale image",
-    url: "/upscale-image",
-    icon: ImagePlus
+    title: "Edit Image",
+    url: "edit-image",
+    icon: Sparkle
   },
   {
     title: "Remove Background",
@@ -61,34 +35,19 @@ const NavItems = [
     icon: Wand2
   },
   {
-    title: "Image to Image",
-    url: "/image-to-image",
-    icon: Image
-  },
-  {
-    title: "Restore Image",
-    url: "/restore-images",
+    title: "Upscale Image",
+    url: "/upscale-images",
     icon: RefreshCcw
   },
   {
-    title: "Extract Text",
-    url: "/extract-text",
-    icon: ScanText
+    title: "Gallery",
+    url: "/gallery",
+    icon: LayoutGrid
   },
   {
-    title: "change background",
-    url: "/change-background",
-    icon: Layers
-  },
-  {
-    title: "Train model",
-    url: "/model-training",
-    icon: Hammer
-  },
-  {
-    title: "Models",
-    url: "/models",
-    icon: Shapes
+    title: "billing",
+    url: "/billing",
+    icon: Wallet
   }
 ]
 

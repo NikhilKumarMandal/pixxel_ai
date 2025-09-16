@@ -1,10 +1,18 @@
+// src/config/lemonsqueezy.ts
+
+/**
+ * Ensures that required environment variables are set and sets up the Lemon
+ * Squeezy JS SDK. Throws an error if any environment variables are missing or
+ * if there's an error setting up the SDK.
+ */
+
 import { lemonSqueezySetup } from '@lemonsqueezy/lemonsqueezy.js'
 
 export function configureLemonSqueezy() {
     const requiredVars = [
-        'LEMONSQUEEZY_API_KEY',
-        'LEMONSQUEEZY_STORE_ID',
-        'LEMONSQUEEZY_WEBHOOK_SECRET',
+        'LEMON_SQUEEZY_API_KEY',
+        'LEMON_SQUEEZY_STORE_ID',
+        'LEMON_SQUEEZY_WEBHOOK_SECRET',
     ]
 
     const missingVars = requiredVars.filter((varName) => !process.env[varName])
@@ -17,5 +25,5 @@ export function configureLemonSqueezy() {
         )
     }
 
-    lemonSqueezySetup({ apiKey: process.env.LEMONSQUEEZY_API_KEY })
+    lemonSqueezySetup({ apiKey: process.env.LEMON_SQUEEZY_API_KEY })
 }

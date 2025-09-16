@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
-import { fal } from "@fal-ai/client";
-import { imagekit } from "@/lib/config";
-import prisma from "@/lib/prisma";
-import { auth } from "@clerk/nextjs/server";
+import { NextRequest, NextResponse } from "next/server"
+import { fal } from "@fal-ai/client"
+import { imagekit } from "@/lib/config"
+import prisma from "@/lib/prisma"
+import { auth } from "@clerk/nextjs/server"
 
 fal.config({
     credentials: process.env.FAL_KEY!,
@@ -11,6 +11,8 @@ fal.config({
 export async function POST(req: NextRequest) {
     try {
         const { userId } = await auth();
+
+        const body = await req.json();
 
         if (!userId) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -27,45 +29,30 @@ export async function POST(req: NextRequest) {
                 { status: 403 }
             );
         }
+        const { prompt, aspectRatio } = body
 
-        const formData = await req.formData();
-        const file = formData.get("image") as File | null;
-
-        if (!file) {
+        if (!prompt) {
             return NextResponse.json(
-                { error: "Image file is required" },
+                { error: "Prompt is required" },
                 { status: 400 }
-            );
+            )
         }
 
-        // Convert File to Buffer
-        const arrayBuffers = await file.arrayBuffer();
-        const buffers = Buffer.from(arrayBuffers);
-
-        // Upload to ImageKit
-        const uploaded = await imagekit.upload({
-            file: buffers, // required
-            fileName: file.name || "upload.png",
-        });
-
-        console.log("ImageKit Uploaded URL:", uploaded.url);
-
-        // Call fal-ai super-resolution with ImageKit URL
-        const result = await fal.subscribe("fal-ai/drct-super-resolution", {
+        // 1. Generate image using fal.ai
+        const result = await fal.subscribe("fal-ai/imagen4/preview", {
             input: {
-                image_url: uploaded.url,
+                prompt,
+                aspect_ratio: aspectRatio || "1:1",
             },
             logs: true,
             onQueueUpdate: (update) => {
                 if (update.status === "IN_PROGRESS") {
-                    update.logs.map((log) => log.message).forEach(console.log);
+                    update.logs?.forEach((log) => console.log(log.message))
                 }
             },
-        });
+        })
 
-
-
-        const imageUrl = result.data.image.url
+        const imageUrl = result.data?.images?.[0]?.url
         if (!imageUrl) {
             return NextResponse.json(
                 { error: "No image generated" },
@@ -96,17 +83,20 @@ export async function POST(req: NextRequest) {
             where: { id: userId },
             data: { credits: { decrement: 1 } },
         });
-        
-        return NextResponse.json({
-            success: true,
-            upscaleUrl: upload.url,
-            msg: "Image upscaled and stored successfully",
-        });
-    } catch (error: any) {
-        console.error("Upscale API Error:", error.message);
+
         return NextResponse.json(
-            { error: error.message || "Failed to upscale image" },
+            {
+                originalImage: imageUrl,
+                uploadedImage: upload.url,
+                requestId: result.requestId,
+            },
+            { status: 200 }
+        )
+    } catch (error: any) {
+        console.error("API Error:", error.message)
+        return NextResponse.json(
+            { error: error.message || "Failed to generate image" },
             { status: 500 }
-        );
+        )
     }
 }
