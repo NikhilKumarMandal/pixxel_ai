@@ -80,7 +80,7 @@ export default function RemoveBackground() {
                 throw new Error(data.error || "Failed to upscale image")
             }
 
-            toast.success("Image upscaled successfully!", { id: toastId })
+            toast.success("Image bg removed successfully!", { id: toastId })
 
             if (data.upscaleUrl) {
                 setProcessedImageUrl(data.upscaleUrl)

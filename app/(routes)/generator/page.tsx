@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useId, useState } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Download, ImageIcon } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useCreditStore } from "@/store/store"
+import { toast } from "sonner"
 
 const formSchema = z.object({
     prompt: z.string().min(10, "Prompt must be at least 10 characters"),
@@ -23,6 +24,7 @@ type FormValues = z.infer<typeof formSchema>
 export default function ImageGenerator() {
     const [generatedImage, setGeneratedImage] = useState<string | null>(null)
     const [loading, setLoading] = useState(false)
+     const toastId = useId();
 
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema),
@@ -52,11 +54,14 @@ export default function ImageGenerator() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(values),
             })
+            toast.loading("generating...", { id: toastId });
 
             if (!res.ok) {
                 const err = await res.json()
                 throw new Error(err.error || "Failed to generate")
             }
+
+            toast.success("Image generated successfully!", { id: toastId });
 
             const data = await res.json()
             setGeneratedImage(data.uploadedImage)
@@ -65,6 +70,24 @@ export default function ImageGenerator() {
             alert(error.message)
         } finally {
             setLoading(false)
+        }
+    }
+
+    const handleDownload = async () => {
+        if (!generatedImage) return
+        try {
+            const response = await fetch(generatedImage, { mode: "cors" });
+            const blob = await response.blob();
+            const blobUrl = window.URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = blobUrl;
+            link.download = "upscaleImage.jpg";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(blobUrl);
+        } catch (error) {
+            console.error("Download failed", error);
         }
     }
 
@@ -132,7 +155,7 @@ export default function ImageGenerator() {
                             />
                             <Button
                                 variant="outline"
-                                onClick={() => window.open(generatedImage, "_blank")}
+                                onClick={handleDownload}
                             >
                                 <Download className="mr-2 h-4 w-4" /> Download
                             </Button>
