@@ -1,9 +1,8 @@
-import { NextRequest, NextResponse } from "next/server"
-import { imagekit } from "@/lib/config" 
-import { fal } from "@fal-ai/client"
+import { NextRequest, NextResponse } from "next/server";
+import { imagekit } from "@/lib/config";
+import { fal } from "@fal-ai/client";
 import prisma from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
-
 
 fal.config({
     credentials: process.env.FAL_KEY!,
@@ -29,47 +28,57 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        const body = await req.json()
-        const { prompt, size, width, height,  images } = body
-        //size, width, height,
-        // 1. Determine final width/height based on size
-        let finalWidth = 512
-        let finalHeight = 512
+        // 🔹 Parse FormData instead of JSON
+        const formData = await req.formData();
+        const prompt = formData.get("prompt") as string;
+        const size = formData.get("size") as string;
+        const width = formData.get("width")
+            ? Number(formData.get("width"))
+            : undefined;
+        const height = formData.get("height")
+            ? Number(formData.get("height"))
+            : undefined;
+
+        const files = formData.getAll("images") as File[];
+
+        // 1. Determine final width/height
+        let finalWidth = 512;
+        let finalHeight = 512;
 
         switch (size) {
             case "square":
-                finalWidth = 512
-                finalHeight = 512
-                break
+                finalWidth = 512;
+                finalHeight = 512;
+                break;
             case "portrait":
-                finalWidth = 512
-                finalHeight = 768 // 3:4
-                break
+                finalWidth = 512;
+                finalHeight = 768; // 3:4
+                break;
             case "landscape":
-                finalWidth = 1024
-                finalHeight = 576 // 16:9
-                break
+                finalWidth = 1024;
+                finalHeight = 576; // 16:9
+                break;
             case "custom":
-                finalWidth = width || 512
-                finalHeight = height || 512
-                break
+                finalWidth = width || 512;
+                finalHeight = height || 512;
+                break;
             default: // "default"
-                finalWidth = 512
-                finalHeight = 512
+                finalWidth = 512;
+                finalHeight = 512;
         }
 
-        // 2. Upload images to ImageKit
-        const uploadedUrls: string[] = []
-        for (const img of images) {
+        // 2. Upload input images to ImageKit
+        const uploadedUrls: string[] = [];
+        for (const file of files) {
+            const arrayBuffer = await file.arrayBuffer();
+            const buffer = Buffer.from(arrayBuffer);
 
             const upload = await imagekit.upload({
-                file: img, // base64 string
+                file: buffer, // file as buffer
                 fileName: `edit-${Date.now()}.png`,
-            })
+            });
 
-            console.log("upload",upload);
-            
-            uploadedUrls.push(upload.url)
+            uploadedUrls.push(upload.url);
         }
 
         // 3. Call fal.ai
@@ -83,62 +92,54 @@ export async function POST(req: NextRequest) {
             logs: true,
             onQueueUpdate: (update) => {
                 if (update.status === "IN_PROGRESS") {
-                    update.logs.map((log) => log.message).forEach(console.log)
+                    update.logs.map((log) => log.message).forEach(console.log);
                 }
             },
-        })
-
-        console.log("res",result);
-        
+        });
 
         const generatedImageUrl = result.data?.images?.[0]?.url;
         if (!generatedImageUrl) {
             return NextResponse.json(
                 { error: "No image generated" },
                 { status: 500 }
-            )
+            );
         }
 
-        const response = await fetch(generatedImageUrl)
-        const arrayBuffer = await response.arrayBuffer()
-        const buffer = Buffer.from(arrayBuffer)
+        // 4. Download generated image & upload to ImageKit
+        const response = await fetch(generatedImageUrl);
+        const arrayBuffer = await response.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
 
-        // 3. Upload to ImageKit
         const upload = await imagekit.upload({
-            file: buffer, // file as buffer
+            file: buffer,
             fileName: `fal-image-${Date.now()}.png`,
-        })
+        });
 
-        console.log("generatedImageUrl", generatedImageUrl);
-
+        // Save record in DB
         await prisma.image.create({
             data: {
                 url: upload.url,
                 fileId: upload.fileId,
-                userId: userId!
-            }
-        })
-        
+                userId,
+            },
+        });
 
+        // Deduct credits
         await prisma.user.update({
             where: { id: userId },
-            data: { credits: { decrement: 1 } },
+            data: { credits: { decrement: 2 } },
         });
-        
 
         return NextResponse.json({
             success: true,
-            generatedUrl: generatedImageUrl,
+            generatedUrl: upload.url, // use ImageKit-hosted URL
             requestId: result.requestId,
-            // width: finalWidth,
-            // height: finalHeight,
-        })
+        });
     } catch (error: any) {
-        console.error("API Error:", error.message)
+        console.error("API Error:", error.message);
         return NextResponse.json(
             { error: error.message || "Failed to generate image" },
             { status: 500 }
-        )
+        );
     }
 }
-

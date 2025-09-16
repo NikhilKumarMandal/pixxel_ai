@@ -94,7 +94,7 @@ export async function POST(req: NextRequest) {
 
         await prisma.user.update({
             where: { id: userId },
-            data: { credits: { decrement: 1 } },
+            data: { credits: { decrement: 2 } },
         });
         
         return NextResponse.json({

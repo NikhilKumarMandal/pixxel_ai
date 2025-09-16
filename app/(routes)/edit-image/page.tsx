@@ -58,50 +58,42 @@ export default function ImageGeneratorUI() {
 
     const handleGenerate = async (values: FormValues) => {
         if (credit! < 2) {
-            router.push("/billing") 
-            return
+            router.push("/billing");
+            return;
         }
 
         try {
-            setIsLoading(true)
+            setIsLoading(true);
 
-            // Convert files to base64
-            const toBase64 = (file: File) =>
-                new Promise<string>((resolve, reject) => {
-                    const reader = new FileReader()
-                    reader.readAsDataURL(file)
-                    reader.onload = () => resolve(reader.result as string)
-                    reader.onerror = (error) => reject(error)
-                })
+            const formData = new FormData();
+            formData.append("prompt", values.prompt);
+            formData.append("size", values.size);
+            if (values.width) formData.append("width", values.width.toString());
+            if (values.height) formData.append("height", values.height.toString());
 
-            const base64Images = await Promise.all(images.map((file) => toBase64(file)))
+            images.forEach((file, idx) => {
+                formData.append("images", file, file.name || `image-${idx}.png`);
+            });
 
             toast.loading("generating...", { id: toastId });
 
             const res = await fetch("/api/edit-image", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    prompt: values.prompt,
-                    size: values.size,
-                    width: values.width,
-                    height: values.height,
-                    images: base64Images,
-                }),
-            })
+                body: formData, // no JSON.stringify, no Content-Type header
+            });
 
-            const data = await res.json()
-            if (!res.ok) throw new Error(data.error || "Image generation failed")
-            
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || "Image generation failed");
+
             toast.success("Image generated successfully!", { id: toastId });
-
-            setGeneratedImage(data.generatedUrl)
+            setGeneratedImage(data.generatedUrl);
         } catch (err: any) {
-            console.error("Generate error:", err.message)
+            console.error("Generate error:", err.message);
         } finally {
-            setIsLoading(false)
+            setIsLoading(false);
         }
-    }
+    };
+
 
     const handleDownload = async () => {
         if (!generatedImage) return
