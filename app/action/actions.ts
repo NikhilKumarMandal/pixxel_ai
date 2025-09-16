@@ -152,7 +152,7 @@ export async function getCheckoutURL(variantId: number, embed = false) {
             },
             productOptions: {
                 enabledVariants: [variantId],
-                redirectUrl: `https://www.creatorsai.live/dashboard`,
+                redirectUrl: `https://www.pixxelai.live/generator`,
                 receiptButtonText: 'Go to Dashboard',
                 receiptThankYouNote: 'Thank you for signing up to Lemon Stand!',
             },

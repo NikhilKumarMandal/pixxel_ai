@@ -7,14 +7,13 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Download, ImageIcon } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useCreditStore } from "@/store/store"
 
 const formSchema = z.object({
     prompt: z.string().min(10, "Prompt must be at least 10 characters"),
-    aspectRatio: z.string(),
+    // aspectRatio: z.string(),
 })
 
 type FormValues = z.infer<typeof formSchema>
@@ -29,7 +28,7 @@ export default function ImageGenerator() {
         resolver: zodResolver(formSchema),
         defaultValues: {
             prompt: "",
-            aspectRatio: "1:1",
+            // aspectRatio: "1:1",
         },
     })
 
@@ -86,6 +85,7 @@ export default function ImageGenerator() {
                                     placeholder="Describe the image you want..."
                                     {...form.register("prompt")}
                                     className="mt-1"
+                                    rows={10}
                                 />
                                 {form.formState.errors.prompt && (
                                     <p className="text-red-500 text-sm mt-1">
@@ -95,7 +95,7 @@ export default function ImageGenerator() {
                             </div>
 
                             {/* Aspect Ratio */}
-                            <div>
+                            {/* <div>
                                 <label className="text-sm font-medium">Aspect Ratio</label>
                                 <Select
                                     defaultValue="1:1"
@@ -111,7 +111,7 @@ export default function ImageGenerator() {
                                         <SelectItem value="9:16">9:16</SelectItem>
                                     </SelectContent>
                                 </Select>
-                            </div>
+                            </div> */}
 
                             {/* Submit Button */}
                             <Button type="submit" disabled={loading || credit! < 2} className="w-full">

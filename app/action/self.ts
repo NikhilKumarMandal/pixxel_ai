@@ -1,26 +1,23 @@
 "use server"
 
 import prisma from "@/lib/prisma";
-import { currentUser } from "@clerk/nextjs/server"
+import { auth } from "@clerk/nextjs/server"
 
 
 
 export async function getCredits() {
     try {
-        const user = await currentUser();
+ 
+        const { userId } = await auth();
 
-        if (!user) {
-            return {
-                error: "Unauthorized",
-                success: false,
-                data: null,
-                count: 0,
-            }
+
+        if (!userId) {
+            throw new Error("Unauthorized");
         }
 
         const credits = await prisma.user.findUnique({
             where: {
-                id: user?.id
+                id: userId!
             },
             select: {
                 credits: true

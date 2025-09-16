@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
         const result = await fal.subscribe("fal-ai/imagen4/preview", {
             input: {
                 prompt,
-                aspect_ratio: aspectRatio || "1:1",
+                // aspect_ratio: aspectRatio || "9:16",
             },
             logs: true,
             onQueueUpdate: (update) => {

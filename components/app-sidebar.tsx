@@ -24,7 +24,7 @@ import { useCreditStore } from "@/store/store";
 export  function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { isSignedIn, user: userData } = useUser()
 
-  const { credit, setCredit } = useCreditStore()
+  const { credit, setCredit } = useCreditStore();
   const [loading, setLoading] = React.useState(true)
 
   React.useEffect(() => {
@@ -33,6 +33,8 @@ export  function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) 
         setLoading(true)
         const res = await getCredits()
         if (res.success) {
+          console.log(res.data);
+          
           setCredit(res.data ?? 0) // ✅ save into store
         }
         setLoading(false)
