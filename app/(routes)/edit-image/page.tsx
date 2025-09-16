@@ -75,6 +75,8 @@ export default function ImageGeneratorUI() {
 
             const base64Images = await Promise.all(images.map((file) => toBase64(file)))
 
+            toast.loading("generating...", { id: toastId });
+
             const res = await fetch("/api/edit-image", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -86,8 +88,6 @@ export default function ImageGeneratorUI() {
                     images: base64Images,
                 }),
             })
-
-            toast.loading("generating...", { id: toastId });
 
             const data = await res.json()
             if (!res.ok) throw new Error(data.error || "Image generation failed")

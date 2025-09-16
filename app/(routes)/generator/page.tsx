@@ -49,13 +49,14 @@ export default function ImageGenerator() {
         setGeneratedImage(null)
 
         try {
+            toast.loading("generating...", { id: toastId });
+
             const res = await fetch("/api/generate", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(values),
             })
-            toast.loading("generating...", { id: toastId });
-
+            
             if (!res.ok) {
                 const err = await res.json()
                 throw new Error(err.error || "Failed to generate")
